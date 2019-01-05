@@ -6,6 +6,16 @@ import re
 import time
 import psutil
 
+
+STEAM_LIBRARIES = ['steam/steamapps', 'SteamLibrary/steamapps']
+# Fell free to remove my CWD for Chuchel. I use it for testing purposes
+GAME_CWD_WHITELIST = ['/mnt/data/SteamLibrary/steamapps/common/CHUCHEL']
+GAME_CMDLINE_WHITELIST = []
+MAGIC_WORDS = ['movethisgameplz']
+
+TARGET_DISPLAY = 1
+
+
 XRANDR_CMD = ['xrandr', '--listactivemonitors']
 # Monitors: 2
 #  0: +eDP-1-1 1920/344x1080/193+0+0  eDP-1-1
@@ -16,14 +26,8 @@ WMCTRL_LIST_CMD = ['wmctrl', '-lp']
 # 0x05400001  0 4789   machine XPROP(1) manual page - Google Chrome
 # 0x08800003  0 18052  machine Терминал - user@machine: ~
 # 0x0880017d  0 18052  machine Терминал - user@machine: ~
-# 0x06400021  0 0          N/A N/A                          <------ Steam :)
-# 0x08000017  0 11271  machine Steam                        <------ Big Picture
-
-STEAM_LIBRARIES = ['steam/steamapps', 'SteamLibrary/steamapps']
-
-GAME_CWD_WHITELIST = []
-GAME_CMDLINE_WHITELIST = []
-MAGIC_WORDS = ['movethisgameplz']
+# 0x06400021  0 0          N/A N/A                       <------ Steam :)
+# 0x08000017  0 11271  machine Steam                     <------ Big Picture
 
 
 def listmonitors():
@@ -103,7 +107,7 @@ def main():
     """Main function"""
     testevrything()
 
-    targetdisp = 1
+    targetdisp = TARGET_DISPLAY
 
     movedsteamwinid = 0
     processedgames = []  # either moved or non-whitelisted
@@ -119,14 +123,16 @@ def main():
                     movewindow(win['id'], m['x'], m['y'], m['w'], m['h'], True)
                     movedsteamwinid = win['id']
             elif issteamapp(win['pid']) and win['id'] not in processedgames:
+                m = listmonitors()[targetdisp]
                 print("Game:", win['id'], win['pid'], win['name'])
                 gameproc = psutil.Process(win['pid'])
                 gamecmd = gameproc.cmdline()
-                if (gamecmd[len(gamecmd) - 1] in MAGIC_WORDS
-                        or gameproc.cmdline() in GAME_CMDLINE_WHITELIST
-                        or gameproc.cwd() in GAME_CWD_WHITELIST):
+                if (gamecmd[len(gamecmd) - 1] in MAGIC_WORDS or
+                        gameproc.cmdline() in GAME_CMDLINE_WHITELIST or
+                        gameproc.cwd() in GAME_CWD_WHITELIST):
                     print('   Moving this game!')
-                    movewindow(win['id'], m['x'], m['y'], m['w'], m['h'], True, True)
+                    movewindow(win['id'], m['x'], m['y'],
+                               m['w'], m['h'], True, True)
                 else:
                     print('   Not whitelisted game!')
                     print('CWD:', gameproc.cwd())
