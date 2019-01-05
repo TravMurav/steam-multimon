@@ -108,7 +108,6 @@ def main():
     testevrything()
 
     targetdisp = TARGET_DISPLAY
-
     movedsteamwinid = 0
     processedgames = []  # either moved or non-whitelisted
 
@@ -142,6 +141,10 @@ def main():
         for wid in processedgames:
             if not any(w['id'] == wid for w in windows):
                 processedgames.remove(wid)
+
+        if not [p.info for p in psutil.process_iter(attrs=['name']) if p.info['name'] == 'steam']:
+            exit()
+
         time.sleep(1)
 
 

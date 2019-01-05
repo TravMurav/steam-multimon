@@ -41,14 +41,17 @@ GAME_CWD_WHITELIST = ['/mnt/data/SteamLibrary/steamapps/common/CHUCHEL',
 ```
 ### Play games
 Just make sure that you started script somewhere in terminal or in background.  
-*I don't recommend you to autorun this since script checks all opened windows every second.*
+
+*I don't recommend you to autorun this since script checks all opened windows every second.*  
+However you can add this script into your Steam shortcut/menu entry. Something like  
+`sh -c "/usr/games/steam %U & ~/path/to/smultimon.py"`
 
 ## ToDo
 * Move whitelist to separate file
 * Add config file?
 * Add command line arguments to override settings
 * Find way to detect whether opened window is launcher or game
-* Add --close-with-steam option (And start script via Steam shortcut/menu entry)
+* Add --close-with-steam option (keep script started if not provided)
 * Allow only one instance of script running at same time
 
 ## License
