@@ -1,5 +1,6 @@
 # Steam Multimon
-Script that automatically moves BigPicture and games to specified display
+Script that automatically moves BigPicture and games to specified display.  
+It allows you to run games on *secondary* displays.
 
 ## Requirements
 * `python3`
@@ -22,15 +23,16 @@ If you want to see your games on display other than `1` you have to change `TARG
 ### Whitelist some games
 Some games works fine on multimonitor systems but some - not.
 You have two ways to whitelist game:
-* Worst but easiest: **Magic Word**  
-Add `movethisgameplz` at the end of game launch options. *After that game may not start!*
+* Worst but easiest: **Magic Word**   
+Add `movethisgameplz` at the end of game launch options. *After that game may not start!*  
+In Steam app: Game properties -> Set launch options...  
+In Big Picture: Manage game -> Set launch options...  
 * **CWD** - working directory  
 If you run game that not whitelisted you will see message like above:
 ```
 Game: 0x08a00003 13395 Chuchel
    Not whitelisted game!
 CWD: /mnt/data/SteamLibrary/steamapps/common/CHUCHEL
-CMDLINE: ['/mnt/data/SteamLibrary/steamapps/common/CHUCHEL/Chuchel.exe', '', '', ...
 ```
 CWD usually will be game installation folder. You have to add it to code like this:
 ```
@@ -41,6 +43,14 @@ GAME_CWD_WHITELIST = ['/mnt/data/SteamLibrary/steamapps/common/CHUCHEL',
 Just make sure that you started script somewhere in terminal or in background.  
 *I don't recommend you to autorun this since script checks all opened windows every second.*
 
+## ToDo
+* Move whitelist to separate file
+* Add config file?
+* Add command line arguments to override settings
+* Find way to detect whether opened window is launcher or game
+* Add --close-with-steam option (And start script via Steam shortcut/menu entry)
+* Allow only one instance of script running at same time
+
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details

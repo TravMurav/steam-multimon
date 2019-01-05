@@ -136,7 +136,7 @@ def main():
                 else:
                     print('   Not whitelisted game!')
                     print('CWD:', gameproc.cwd())
-                    print('CMDLINE:', gameproc.cmdline())
+                    #print('CMDLINE:', gameproc.cmdline())
                 processedgames.append(win['id'])
 
         for wid in processedgames:
