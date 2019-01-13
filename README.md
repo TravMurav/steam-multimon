@@ -9,8 +9,8 @@ It allows you to run games on *secondary* displays.
 
 You can install them via apt or similar tool:
 ```
-sudo apt install python3 pip3 wmctrl
-pip3 install psutil
+sudo apt install python3 wmctrl python3-psutil
+
 ```
 
 ## Usage
@@ -58,6 +58,7 @@ However you can add this script into your Steam shortcut/menu entry. Something l
 * Add command line arguments to override settings
 * Find way to detect whether opened window is launcher or game
 * Add --close-with-steam option (keep script started if not provided)
+* Automate whitelist (add prompt: Once/Allways/Never)
 
 ## License
 

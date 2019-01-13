@@ -13,6 +13,7 @@ import shutil
 import psutil
 
 
+
 UPDATE_CONFIG_INTERVAL = 30 # Seconds
 
 CONFIG_FOLDER = '~/.config/smultimon/'
@@ -177,6 +178,7 @@ def main():
     global steam_libraries
     global games_whitelist
     #pylint: enable-msg=W0603
+
 
     targetdisp = TARGET_DISPLAY
     movedsteamwinid = 0
