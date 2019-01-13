@@ -5,9 +5,13 @@ It allows you to run games on *secondary* displays.
 ## Requirements
 * `python3`
 * `wmctrl`
+* `psutil`
 
 You can install them via apt or similar tool:
-`sudo apt install python3 wmctrl`
+```
+sudo apt install python3 pip3 wmctrl
+pip3 install psutil
+```
 
 ## Usage
 ### Choose your target display
@@ -34,11 +38,14 @@ Game: 0x08a00003 13395 Chuchel
    Not whitelisted game!
 CWD: /mnt/data/SteamLibrary/steamapps/common/CHUCHEL
 ```
-CWD usually will be game installation folder. You have to add it to code like this:
+CWD usually will be game installation folder. You have to add it to whitelist file like this:
 ```
-GAME_CWD_WHITELIST = ['/mnt/data/SteamLibrary/steamapps/common/CHUCHEL',
-					  '/path/to/your/another/game']
+echo "/mnt/data/SteamLibrary/steamapps/common/CHUCHEL" >> ~/.config/smultimon/games_whitelist.txt
 ```
+Or you can edit this file with your favorite text editor
+
+**If you have more than one Steam library:**  
+Add your libraries to `~/.config/smultimon/steam_libraries.txt`
 ### Play games
 Just make sure that you started script somewhere in terminal or in background.  
 
@@ -47,12 +54,10 @@ However you can add this script into your Steam shortcut/menu entry. Something l
 `sh -c "/usr/games/steam %U & ~/path/to/smultimon.py"`
 
 ## ToDo
-* Move whitelist to separate file
 * Add config file?
 * Add command line arguments to override settings
 * Find way to detect whether opened window is launcher or game
 * Add --close-with-steam option (keep script started if not provided)
-* Allow only one instance of script running at same time
 
 ## License
 

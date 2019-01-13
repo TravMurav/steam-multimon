@@ -4,30 +4,65 @@
 import subprocess
 import re
 import time
+import atexit
+import sys
+import os
+import getpass
+import shutil
+
 import psutil
 
 
-STEAM_LIBRARIES = ['steam/steamapps', 'SteamLibrary/steamapps']
-# Fell free to remove my CWD for Chuchel. I use it for testing purposes
-GAME_CWD_WHITELIST = ['/mnt/data/SteamLibrary/steamapps/common/CHUCHEL']
-GAME_CMDLINE_WHITELIST = []
+UPDATE_CONFIG_INTERVAL = 30 # Seconds
+
+CONFIG_FOLDER = '~/.config/smultimon/'
+STEAM_LIBRARIES_FILE = 'steam_libraries.txt'
+GAMES_WHITELIST_FILE = 'games_whitelist.txt'
+
 MAGIC_WORDS = ['movethisgameplz']
 
 TARGET_DISPLAY = 1
-
 
 XRANDR_CMD = ['xrandr', '--listactivemonitors']
 # Monitors: 2
 #  0: +eDP-1-1 1920/344x1080/193+0+0  eDP-1-1
 #  1: +HDMI-1-1 1920/510x1080/287+1920+0  HDMI-1-1
 WMCTRL_LIST_CMD = ['wmctrl', '-lp']
-# 0x01000004 -1 4353   machine xfce4-panel
-# 0x01400003 -1 4357   machine Рабочий стол
-# 0x05400001  0 4789   machine XPROP(1) manual page - Google Chrome
-# 0x08800003  0 18052  machine Терминал - user@machine: ~
-# 0x0880017d  0 18052  machine Терминал - user@machine: ~
-# 0x06400021  0 0          N/A N/A                       <------ Steam :)
-# 0x08000017  0 11271  machine Steam                     <------ Big Picture
+# 0x06400021  0 0            N/A N/A        <------ Steam :)
+# 0x08000017  0 11271  localhost Steam      <------ Big Picture
+
+REPLACES_FOR_FILES = [('%USERNAME%', getpass.getuser())]
+
+PIDFILE = '/tmp/smultimon.pid'
+
+
+# TODO: Automaticaly generate empty file if template dont exist
+
+def readlistfile(filepath):
+    """Reads file to list line-by-line, ignoring comments started from #"""
+    lines = []
+    if not os.path.isfile(os.path.expanduser(filepath)):
+        scriptfolder = os.path.dirname(os.path.abspath(__file__))
+        os.makedirs(os.path.expanduser(CONFIG_FOLDER))
+        to_copy = os.listdir(scriptfolder + '/config')
+        for f in to_copy:
+            filename = os.path.join(scriptfolder + '/config', f)
+            if os.path.isfile(filename):
+                shutil.copy(filename, os.path.expanduser(CONFIG_FOLDER))
+
+    with open(os.path.expanduser(filepath)) as f:
+        file = [x.strip() for x in f.readlines()]
+    for line in file:
+        cleaned = re.sub(r'#.*$', '', line)
+        for p, r in REPLACES_FOR_FILES:
+            cleaned = cleaned.replace(p, r)
+        if cleaned:
+            lines.append(cleaned)
+    return lines
+
+
+steam_libraries = readlistfile(CONFIG_FOLDER + STEAM_LIBRARIES_FILE)
+games_whitelist = readlistfile(CONFIG_FOLDER + GAMES_WHITELIST_FILE)
 
 
 def listmonitors():
@@ -74,7 +109,7 @@ def issteamapp(pid):
         return False
     process = psutil.Process(pid)
     # Check booth cmdline and cwd. Maybe - find better way
-    return bool(any(lib in process.cwd() for lib in STEAM_LIBRARIES))
+    return bool(any(lib in process.cwd() for lib in steam_libraries))
 
 
 #pylint: disable-msg=too-many-arguments
@@ -92,7 +127,6 @@ def movewindow(windowid, x=-1, y=-1, w=-1, h=-1, activate=False, fullscreen=Fals
 
 def testevrything():
     """test"""
-
     for mon in listmonitors():
         print(mon['num'], mon['interface'], mon['w'], mon['h'])
 
@@ -103,13 +137,52 @@ def testevrything():
             print("Game:", win['id'], win['pid'], win['name'])
 
 
+def lockprocess(forcereplace=False):
+    """Makes pidfile if it doesn't exist. Otherwise prompts"""
+    # 0 = die, 1 = replace
+    pid = os.getpid()
+    if os.path.isfile(PIDFILE):
+        if forcereplace:
+            f = open(PIDFILE, 'r')
+            oldpid = int(f.read().strip())
+            p = psutil.Process(oldpid)
+            p.terminate()
+            f.close()
+            f = open(PIDFILE, 'w')
+            f.write(str(pid))
+            f.close()
+            print("Replaced running one")
+        else:
+            print("Script already running")
+            sys.exit()
+    else:
+        f = open(PIDFILE, 'w')
+        f.write(str(pid))
+        f.close()
+
+@atexit.register
+def goodbye():
+    """Die gracefully"""
+    print("Goodbye!")
+    os.unlink(PIDFILE)
+
+
 def main():
     """Main function"""
     testevrything()
 
+    lockprocess(True)
+
+    #pylint: disable-msg=W0603
+    global steam_libraries
+    global games_whitelist
+    #pylint: enable-msg=W0603
+
     targetdisp = TARGET_DISPLAY
     movedsteamwinid = 0
     processedgames = []  # either moved or non-whitelisted
+
+    updateconfig = UPDATE_CONFIG_INTERVAL
 
     while True:
         windows = listwindows()
@@ -127,15 +200,13 @@ def main():
                 gameproc = psutil.Process(win['pid'])
                 gamecmd = gameproc.cmdline()
                 if (gamecmd[len(gamecmd) - 1] in MAGIC_WORDS or
-                        gameproc.cmdline() in GAME_CMDLINE_WHITELIST or
-                        gameproc.cwd() in GAME_CWD_WHITELIST):
+                        gameproc.cwd() in games_whitelist):
                     print('   Moving this game!')
                     movewindow(win['id'], m['x'], m['y'],
                                m['w'], m['h'], True, True)
                 else:
                     print('   Not whitelisted game!')
                     print('CWD:', gameproc.cwd())
-                    #print('CMDLINE:', gameproc.cmdline())
                 processedgames.append(win['id'])
 
         for wid in processedgames:
@@ -144,6 +215,12 @@ def main():
 
         if not [p.info for p in psutil.process_iter(attrs=['name']) if p.info['name'] == 'steam']:
             exit()
+
+        updateconfig -= 1
+        if updateconfig == 0:
+            steam_libraries = readlistfile(CONFIG_FOLDER + STEAM_LIBRARIES_FILE)
+            games_whitelist = readlistfile(CONFIG_FOLDER + GAMES_WHITELIST_FILE)
+            updateconfig = UPDATE_CONFIG_INTERVAL
 
         time.sleep(1)
 

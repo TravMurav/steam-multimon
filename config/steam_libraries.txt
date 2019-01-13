@@ -1,0 +1,7 @@
+# This file contains your Steam libraries (in case you have more than one)
+
+# %USERNAME% will be replaced to your username
+# Everything after # will be ignored
+
+# Default steam installation
+/home/$USERNAME%/.steam/steam/steamapps
