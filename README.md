@@ -27,7 +27,7 @@ If you want to see your games on display other than `1` you have to change `TARG
 ### Whitelist some games
 Some games works fine on multimonitor systems but some - not.
 You have two ways to whitelist game:
-* Worst but easiest: **Magic Word**   
+* Worst but easiest: **Magic Word** *(deprecated)*   
 Add `movethisgameplz` at the end of game launch options. *After that game may not start!*  
 In Steam app: Game properties -> Set launch options...  
 In Big Picture: Manage game -> Set launch options...  

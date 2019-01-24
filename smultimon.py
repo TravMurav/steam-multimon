@@ -218,6 +218,19 @@ def main():
                     print('   Moving this game!')
                     move_window(win['id'], m['x'], m['y'],
                                 m['w'], m['h'], True, True)
+                    if gamecmd[len(gamecmd) - 1] in MAGIC_WORDS:
+                        print('Magic Words is DEPRECATED!')
+                        print('CWD:        ', gameproc.cwd())
+                        if 'Proton' in gameproc.exe():
+                            print('Proton path:', gameproc.exe())
+                            print('Executeable:', gamecmd[0])
+                        else:
+                            print('Executeable:', gameproc.exe())
+                        print('Commandline: ', end=' ')
+                        for i in gamecmd:
+                            if i:
+                                print(i, end=' ')
+                    print('\n')
                 else:
                     print('   Not whitelisted game!')
                     print('CWD:        ', gameproc.cwd())
