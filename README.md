@@ -31,16 +31,18 @@ You have two ways to whitelist game:
 Add `movethisgameplz` at the end of game launch options. *After that game may not start!*  
 In Steam app: Game properties -> Set launch options...  
 In Big Picture: Manage game -> Set launch options...  
-* **CWD** - working directory  
+* **binary** - Full path to executeable  
 If you run game that not whitelisted you will see message like above:
 ```
-Game: 0x08a00003 13395 Chuchel
+Game: 0x08600005 2169 RimWorld by Ludeon Studios
    Not whitelisted game!
-CWD: /mnt/data/SteamLibrary/steamapps/common/CHUCHEL
+CWD:         /home/user/.steam/steam/steamapps/common/RimWorld
+Executeable: /home/user/.steam/steam/steamapps/common/RimWorld/RimWorldLinux.x86_64
+Commandline:  ./RimWorldLinux.x86_64 -logfile /tmp/rimworld_log
 ```
-CWD usually will be game installation folder. You have to add it to whitelist file like this:
+Executeable usually will be game binary file. You have to add it to whitelist file like this:
 ```
-echo "/mnt/data/SteamLibrary/steamapps/common/CHUCHEL" >> ~/.config/smultimon/games_whitelist.txt
+echo "/home/user/.steam/steam/steamapps/common/RimWorld/RimWorldLinux.x86_64" >> ~/.config/smultimon/games_whitelist.txt
 ```
 Or you can edit this file with your favorite text editor
 

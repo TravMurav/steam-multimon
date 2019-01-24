@@ -108,8 +108,8 @@ def is_steam_app(pid):
     if pid == 0:  # wmctrl returns 0 if no pid provided by window
         return False
     process = psutil.Process(pid)
-    # Check cwd. Maybe - find better way
-    return bool(any(lib in process.cwd() for lib in steam_libraries))
+    # Check exe path. Maybe - find better way
+    return bool(any(lib in process.exe() for lib in steam_libraries))
 
 
 #pylint: disable-msg=too-many-arguments
@@ -209,14 +209,28 @@ def main():
                 print("Game:", win['id'], win['pid'], win['name'])
                 gameproc = psutil.Process(win['pid'])
                 gamecmd = gameproc.cmdline()
+                # TODO: Find a better way to get Proton game binary
+                # HACK: Checking cmdline[0] for Proton games
                 if (gamecmd[len(gamecmd) - 1] in MAGIC_WORDS or
-                        gameproc.cwd() in games_whitelist):
+                        gameproc.exe() in games_whitelist or
+                        ('Proton' in gameproc.exe() and
+                         gamecmd[0] in games_whitelist)):
                     print('   Moving this game!')
                     move_window(win['id'], m['x'], m['y'],
                                 m['w'], m['h'], True, True)
                 else:
                     print('   Not whitelisted game!')
-                    print('CWD:', gameproc.cwd())
+                    print('CWD:        ', gameproc.cwd())
+                    if 'Proton' in gameproc.exe():
+                        print('Proton path:', gameproc.exe())
+                        print('Executeable:', gamecmd[0])
+                    else:
+                        print('Executeable:', gameproc.exe())
+                    print('Commandline: ', end=' ')
+                    for i in gamecmd:
+                        if i:
+                            print(i, end=' ')
+                    print('\n')
                 processed_games.append(win['id'])
 
         for wid in processed_games:
