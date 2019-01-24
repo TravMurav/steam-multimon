@@ -4,4 +4,4 @@
 # %USERNAME% will be replaced to your username
 # Everything after # will be ignored
 
-# /home/$USERNAME%/.steam/steam/steamapps/common/YourGame
+# /home/%USERNAME%/.steam/steam/steamapps/common/YourGame

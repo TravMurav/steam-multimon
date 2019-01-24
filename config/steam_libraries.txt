@@ -4,4 +4,4 @@
 # Everything after # will be ignored
 
 # Default steam installation
-/home/$USERNAME%/.steam/steam/steamapps
+/home/%USERNAME%/.steam/steam/steamapps

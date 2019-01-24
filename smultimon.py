@@ -13,41 +13,39 @@ import shutil
 import psutil
 
 
+# TODO: Config file and config tool
 
 UPDATE_CONFIG_INTERVAL = 30 # Seconds
 
 CONFIG_FOLDER = '~/.config/smultimon/'
 STEAM_LIBRARIES_FILE = 'steam_libraries.txt'
 GAMES_WHITELIST_FILE = 'games_whitelist.txt'
+PIDFILE = '/tmp/smultimon.pid'
 
 MAGIC_WORDS = ['movethisgameplz']
 
 TARGET_DISPLAY = 1
 
 XRANDR_CMD = ['xrandr', '--listactivemonitors']
-# Monitors: 2
-#  0: +eDP-1-1 1920/344x1080/193+0+0  eDP-1-1
-#  1: +HDMI-1-1 1920/510x1080/287+1920+0  HDMI-1-1
 WMCTRL_LIST_CMD = ['wmctrl', '-lp']
-# 0x06400021  0 0            N/A N/A        <------ Steam :)
-# 0x08000017  0 11271  localhost Steam      <------ Big Picture
 
 REPLACES_FOR_FILES = [('%USERNAME%', getpass.getuser())]
 
-PIDFILE = '/tmp/smultimon.pid'
-
+# TODO: Use binary path instead of CWD
 
 # TODO: Automaticaly generate empty file if template dont exist
 
-def readlistfile(filepath):
+# TODO: Add combinations to whitelist (e.g. CWD + Window title or binary name)
+
+def read_list_file(filepath):
     """Reads file to list line-by-line, ignoring comments started from #"""
     lines = []
     if not os.path.isfile(os.path.expanduser(filepath)):
-        scriptfolder = os.path.dirname(os.path.abspath(__file__))
+        script_folder = os.path.dirname(os.path.abspath(__file__))
         os.makedirs(os.path.expanduser(CONFIG_FOLDER))
-        to_copy = os.listdir(scriptfolder + '/config')
+        to_copy = os.listdir(script_folder + '/config')
         for f in to_copy:
-            filename = os.path.join(scriptfolder + '/config', f)
+            filename = os.path.join(script_folder + '/config', f)
             if os.path.isfile(filename):
                 shutil.copy(filename, os.path.expanduser(CONFIG_FOLDER))
 
@@ -62,15 +60,16 @@ def readlistfile(filepath):
     return lines
 
 
-steam_libraries = readlistfile(CONFIG_FOLDER + STEAM_LIBRARIES_FILE)
-games_whitelist = readlistfile(CONFIG_FOLDER + GAMES_WHITELIST_FILE)
+# TODO: Pass as arguments, don't use globals
+steam_libraries = read_list_file(CONFIG_FOLDER + STEAM_LIBRARIES_FILE)
+games_whitelist = read_list_file(CONFIG_FOLDER + GAMES_WHITELIST_FILE)
 
 
-def listmonitors():
+def list_monitors():
     """Returns list of active monitors"""
     monitors = []
-    xrandrproc = subprocess.run(XRANDR_CMD, stdout=subprocess.PIPE)
-    for line in xrandrproc.stdout.decode("utf-8").splitlines():
+    xrandr_proc = subprocess.run(XRANDR_CMD, stdout=subprocess.PIPE)
+    for line in xrandr_proc.stdout.decode("utf-8").splitlines():
         if not "Monitors: " in line:
             # I hope this will work not only for me :)
             monitor = re.split(r'[ /x+]', line)
@@ -81,11 +80,11 @@ def listmonitors():
     return monitors
 
 
-def listwindows():
+def list_windows():
     """Returns list of windows"""
     windows = []
-    wmctrlproc = subprocess.run(WMCTRL_LIST_CMD, stdout=subprocess.PIPE)
-    for line in wmctrlproc.stdout.decode("utf-8").splitlines():
+    wmctrl_proc = subprocess.run(WMCTRL_LIST_CMD, stdout=subprocess.PIPE)
+    for line in wmctrl_proc.stdout.decode("utf-8").splitlines():
         window = line.split(maxsplit=4)
         windows.append({'id': window[0],
                         'pid': int(window[2]),
@@ -97,24 +96,24 @@ def listwindows():
 # STEAM_BIGPICTURE(CARDINAL) = 1
 # Thank you, Valve!
 
-def isbigpicture(windowid):
+def is_bigpicture(windowid):
     """Check STEAM_BIGPICTURE property of window"""
-    xpropproc = subprocess.run(
+    xprop_proc = subprocess.run(
         ['xprop', '-id', windowid, 'STEAM_BIGPICTURE'], stdout=subprocess.PIPE)
-    return bool("STEAM_BIGPICTURE(CARDINAL) = 1" in xpropproc.stdout.decode("utf-8"))
+    return bool("STEAM_BIGPICTURE(CARDINAL) = 1" in xprop_proc.stdout.decode("utf-8"))
 
 
-def issteamapp(pid):
+def is_steam_app(pid):
     """Check if app runs from steamapps folder"""
     if pid == 0:  # wmctrl returns 0 if no pid provided by window
         return False
     process = psutil.Process(pid)
-    # Check booth cmdline and cwd. Maybe - find better way
+    # Check cwd. Maybe - find better way
     return bool(any(lib in process.cwd() for lib in steam_libraries))
 
 
 #pylint: disable-msg=too-many-arguments
-def movewindow(windowid, x=-1, y=-1, w=-1, h=-1, activate=False, fullscreen=False):
+def move_window(windowid, x=-1, y=-1, w=-1, h=-1, activate=False, fullscreen=False):
     """Moves window and scales it"""
     if activate:
         subprocess.run(['wmctrl', '-ia', windowid])
@@ -126,19 +125,27 @@ def movewindow(windowid, x=-1, y=-1, w=-1, h=-1, activate=False, fullscreen=Fals
 #pylint: enable-msg=too-many-arguments
 
 
-def testevrything():
+def test_evrything():
     """test"""
-    for mon in listmonitors():
+    for mon in list_monitors():
         print(mon['num'], mon['interface'], mon['w'], mon['h'])
 
-    for win in listwindows():
-        if isbigpicture(win['id']):
+    for win in list_windows():
+        if is_bigpicture(win['id']):
             print("BigPicture:", win['id'], win['name'])
-        elif issteamapp(win['pid']):
+        elif is_steam_app(win['pid']):
             print("Game:", win['id'], win['pid'], win['name'])
 
+    print('Libraries:')
+    for i in steam_libraries:
+        print(i)
 
-def lockprocess(forcereplace=False):
+    print('Whitelisted games:')
+    for i in games_whitelist:
+        print(i)
+
+
+def lock_process(forcereplace=False):
     """Makes pidfile if it doesn't exist. Otherwise prompts"""
     # 0 = die, 1 = replace
     pid = os.getpid()
@@ -170,9 +177,9 @@ def goodbye():
 
 def main():
     """Main function"""
-    testevrything()
+    test_evrything()
 
-    lockprocess(True)
+    lock_process(True)
 
     #pylint: disable-msg=W0603
     global steam_libraries
@@ -180,49 +187,51 @@ def main():
     #pylint: enable-msg=W0603
 
 
-    targetdisp = TARGET_DISPLAY
-    movedsteamwinid = 0
-    processedgames = []  # either moved or non-whitelisted
+    target_display = TARGET_DISPLAY
+    moved_steam_window_id = 0
+    processed_games = []  # either moved or non-whitelisted
 
-    updateconfig = UPDATE_CONFIG_INTERVAL
+    update_config_timer = UPDATE_CONFIG_INTERVAL
 
     while True:
-        windows = listwindows()
+        windows = list_windows()
         for win in windows:
-            if isbigpicture(win['id']):
-                if movedsteamwinid != win['id']:
+            if is_bigpicture(win['id']):
+                if moved_steam_window_id != win['id']:
                     print("BigPicture:", win['id'],
-                          "Moving to display", targetdisp)
-                    m = listmonitors()[targetdisp]
-                    movewindow(win['id'], m['x'], m['y'], m['w'], m['h'], True)
-                    movedsteamwinid = win['id']
-            elif issteamapp(win['pid']) and win['id'] not in processedgames:
-                m = listmonitors()[targetdisp]
+                          "Moving to display", target_display)
+                    m = list_monitors()[target_display]
+                    move_window(win['id'], m['x'], m['y'], m['w'], m['h'], True)
+                    moved_steam_window_id = win['id']
+
+            elif is_steam_app(win['pid']) and win['id'] not in processed_games:
+                m = list_monitors()[target_display]
                 print("Game:", win['id'], win['pid'], win['name'])
                 gameproc = psutil.Process(win['pid'])
                 gamecmd = gameproc.cmdline()
                 if (gamecmd[len(gamecmd) - 1] in MAGIC_WORDS or
                         gameproc.cwd() in games_whitelist):
                     print('   Moving this game!')
-                    movewindow(win['id'], m['x'], m['y'],
-                               m['w'], m['h'], True, True)
+                    move_window(win['id'], m['x'], m['y'],
+                                m['w'], m['h'], True, True)
                 else:
                     print('   Not whitelisted game!')
                     print('CWD:', gameproc.cwd())
-                processedgames.append(win['id'])
+                processed_games.append(win['id'])
 
-        for wid in processedgames:
+        for wid in processed_games:
             if not any(w['id'] == wid for w in windows):
-                processedgames.remove(wid)
+                processed_games.remove(wid)
 
         if not [p.info for p in psutil.process_iter(attrs=['name']) if p.info['name'] == 'steam']:
             exit()
 
-        updateconfig -= 1
-        if updateconfig == 0:
-            steam_libraries = readlistfile(CONFIG_FOLDER + STEAM_LIBRARIES_FILE)
-            games_whitelist = readlistfile(CONFIG_FOLDER + GAMES_WHITELIST_FILE)
-            updateconfig = UPDATE_CONFIG_INTERVAL
+        # TODO: Check if file changed instead of reading it evry time
+        update_config_timer -= 1
+        if update_config_timer == 0:
+            steam_libraries = read_list_file(CONFIG_FOLDER + STEAM_LIBRARIES_FILE)
+            games_whitelist = read_list_file(CONFIG_FOLDER + GAMES_WHITELIST_FILE)
+            update_config_timer = UPDATE_CONFIG_INTERVAL
 
         time.sleep(1)
 
